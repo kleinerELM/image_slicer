@@ -1,5 +1,5 @@
-# remove_SEM_scalebar
-simple script to split tiff images in multiple smaller tiles
+# image_slicer
+simple script to split tiff images in multiple smaller tiles for Python 3.x
 
 ## standard automatical processing
 
@@ -29,4 +29,12 @@ usage: D:\Nextcloud\Uni\WdB\REM\Fiji Plugins & Macros\Selbstgeschrieben\image_sl
 -o,                  : setting output directory name [cut]
 -c                   : creating subfolders for each image [./cut/FILENAME/]
 -d                   : show debug output
+```
+
+## output
+
+The output files can be found in the subfolder "cut". They will be named in the following way, if the input file was named example.tif:
+
+```
+example_[x]_[y].tif
 ```
