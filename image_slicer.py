@@ -27,6 +27,7 @@ col_count = 2
 row_count = 2
 outputDirName = "cut"
 createFolderPerImage = False
+showDebuggingOutput = False
 
 #### process given command line arguments
 def processArguments():
