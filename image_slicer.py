@@ -36,6 +36,8 @@ def processArguments():
     global outputDirName
     global showDebuggingOutput
     global createFolderPerImage
+    col_changed = False
+    row_changed = False
     argv = sys.argv[1:]
     usage = sys.argv[0] + " [-h] [-x] [-y] [-d]"
     try:
@@ -61,13 +63,22 @@ def processArguments():
             print( 'creating subfolders for images' )
         elif opt in ("-x"):
             col_count = int( arg )
+            col_changed = True
             print( 'changed amount of slices in x direction to ' + str( col_count ) )
         elif opt in ("-y"):
             row_count = int( arg )
+            row_changed = True
             print( 'changed amount of slices in y direction to ' + str( row_count ) )
         elif opt in ("-d"):
             print( 'show debugging output' )
             showDebuggingOutput = True
+    # alway expecting the same values for row/col if not defined explicitly        
+    if col_changed and not row_changed:
+        row_count = col_count
+        print( 'changed amount of slices in y direction also to ' + str( row_count ) )
+    elif row_changed and not col_changed:
+        col_count = row_count
+        print( 'changed amount of slices in x direction also to ' + str( col_count ) )
     print( '' )
 
 
