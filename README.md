@@ -1,5 +1,11 @@
 # image_slicer
-simple script to split tiff images in multiple smaller tiles for Python 3.x
+Simple script to split tiff images in a selected folter into multiple smaller tiles 
+written for Python 3.x
+
+# required special packages
+tkinter
+PIL
+tifffile
 
 ## standard automatical processing
 
@@ -33,7 +39,7 @@ usage: D:\Nextcloud\Uni\WdB\REM\Fiji Plugins & Macros\Selbstgeschrieben\image_sl
 
 ## output
 
-The output files can be found in the subfolder "cut". They will be named in the following way, if the input file was named example.tif:
+The output files can be found in the subfolder `cut`. They will be named in the following way, if the input file was named example.tif:
 
 ```
 example_[x]_[y].tif
