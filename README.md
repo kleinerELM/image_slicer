@@ -1,13 +1,24 @@
 # image_slicer
-Simple script to split tiff images in a selected folter into multiple smaller tiles 
+
+Simple script to split tiff images in a selected folder into multiple smaller tiles 
 written for Python 3.x
+Auto detects scaling of an image and removes scale bar if it exists
 
-# required special packages
-tkinter
-PIL
-tifffile
+## required packages
 
-## standard automatical processing
+### third party
+
+- tkinter
+- PIL
+- tifffile
+
+### own packages
+
+- https://github.com/kleinerELM/tiff_scaling
+- https://github.com/kleinerELM/remove_scalebar
+These packages have to exist in the parent folder of the image_slicer script-folder!
+
+## Standard automatic processing
 
 run 
 ```bash

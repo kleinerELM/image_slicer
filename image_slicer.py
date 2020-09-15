@@ -7,6 +7,30 @@ Image.MAX_IMAGE_PIXELS = 1000000000 # prevent decompressionbomb warning for typi
 import tkinter as tk
 from tkinter import filedialog
 
+home_dir = os.path.dirname(os.path.realpath(__file__))
+ts_path = os.path.dirname( home_dir ) + os.sep + 'tiff_scaling' + os.sep
+ts_file = 'set_tiff_scaling'
+if ( os.path.isdir( ts_path ) and os.path.isfile( ts_path + ts_file + '.py' ) or os.path.isfile( home_dir + ts_file + '.py' ) ):
+    if ( os.path.isdir( ts_path ) ): sys.path.insert( 1, ts_path )
+    import set_tiff_scaling as ts
+    import extract_tiff_scaling as es
+else:
+    programInfo()
+    print( 'missing ' + ts_path + ts_file + '.py!' )
+    print( 'download from https://github.com/kleinerELM/tiff_scaling' )
+    sys.exit()
+
+rsb_file = 'remove_scalebar'
+rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_scalebar' + os.sep
+if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
+    if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
+    import remove_scalebar as rsb
+else:
+    programInfo()
+    print( 'missing ' + rsb_path + rsb_file + '.py!' )
+    print( 'download from https://github.com/kleinerELM/remove_scalebar' )
+    sys.exit()
+
 def programInfo():
     print("#########################################################")
     print("# Automatically slice TIFF images using a defined grid  #")
@@ -32,7 +56,7 @@ def getBaseSettings():
     return settings
 
 #### process given command line arguments
-def processArguments():    
+def processArguments():
     settings = getBaseSettings()
     col_changed = False
     row_changed = False
@@ -81,14 +105,23 @@ def processArguments():
     return settings
 
 def sliceImage( settings, file_name, file_extension ):
-    src_file = settings["workingDirectory"] + os.sep + file_name + file_extension
-    if ( file_extension.lower() == '.tif'):
-        img = tiff.imread( src_file )
-        height, width = img.shape[:2]
-    if ( file_extension.lower() == '.png'):
-        img = Image.open( src_file )
-        width, height = img.size
+    #if ( file_extension.lower() == '.tif'):
+    #    img = tiff.imread( src_file )
+    #    height, width = img.shape[:2]
+    #if ( file_extension.lower() == '.png'):
+    
+    filename = file_name + file_extension
+    scaling = es.getFEIScaling( filename, settings["workingDirectory"], verbose=settings["showDebuggingOutput"] )
+    if not (scaling==False):
+        noScaleBarDirectory = settings["workingDirectory"] + os.sep + 'no_scale_bar' + os.sep
+        rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
+        src_file = noScaleBarDirectory + filename
+    else:
+        scaling = es.autodetectScaling( filename, settings["workingDirectory"] )
+        src_file = settings["workingDirectory"] + os.sep + filename
 
+    img = Image.open( src_file )
+    width, height = img.size
     #cropping
     crop_height = int(height/settings["row_count"])
     crop_width = int(width/settings["col_count"])
@@ -104,12 +137,11 @@ def sliceImage( settings, file_name, file_extension ):
             fileij = file_name + "_" + str( i ) + "_" + str( j ) + file_extension
             print( "   - " + fileij + ":" )
             cropped_filename = targetDirectory + fileij
-            if ( file_extension.lower() == '.tif'):
-                cropped = img[(i*crop_height):((i+1)*crop_height), j*crop_width:((j+1)*crop_width)]
-                tiff.imwrite( cropped_filename, cropped ) #, photometric='rgb'
-            if ( file_extension.lower() == '.png'):
-                img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename )
-            
+            #if ( file_extension.lower() == '.tif'):
+            #    cropped = img[(i*crop_height):((i+1)*crop_height), j*crop_width:((j+1)*crop_width)]
+            #    tiff.imwrite( cropped_filename, cropped ) #, photometric='rgb'
+            #if ( file_extension.lower() == '.png'):
+            img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = ts.setImageJScaling( scaling ) )
     img=None
     cropped=None
 
