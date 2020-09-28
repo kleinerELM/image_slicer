@@ -104,15 +104,16 @@ def processArguments():
     print( '' )
     return settings
 
-def sliceImage( settings, file_name, file_extension ):
-    #if ( file_extension.lower() == '.tif'):
-    #    img = tiff.imread( src_file )
-    #    height, width = img.shape[:2]
-    #if ( file_extension.lower() == '.png'):
-    
-    filename = file_name + file_extension
+# slice the source image to smaller tiles, saves it in the defined output folder and returns the scaling if available
+def sliceImage( settings, file_name, file_extension=False ):
+    if not file_extension == False:
+        filename = file_name + file_extension
+    else:
+        filename = file_name
+        file_name, file_extension = os.path.splitext( filename )
+
     scaling = es.getFEIScaling( filename, settings["workingDirectory"], verbose=settings["showDebuggingOutput"] )
-    if not (scaling==False):
+    if not scaling == False:
         noScaleBarDirectory = settings["workingDirectory"] + os.sep + 'no_scale_bar' + os.sep
         rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
         src_file = noScaleBarDirectory + filename
@@ -137,14 +138,10 @@ def sliceImage( settings, file_name, file_extension ):
             fileij = file_name + "_" + str( i ) + "_" + str( j ) + file_extension
             print( "   - " + fileij + ":" )
             cropped_filename = targetDirectory + fileij
-            #if ( file_extension.lower() == '.tif'):
-            #    cropped = img[(i*crop_height):((i+1)*crop_height), j*crop_width:((j+1)*crop_width)]
-            #    tiff.imwrite( cropped_filename, cropped ) #, photometric='rgb'
-            #if ( file_extension.lower() == '.png'):
             img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = ts.setImageJScaling( scaling ) )
     img=None
     cropped=None
-
+    return scaling
 
 ### actual program start
 if __name__ == '__main__':
