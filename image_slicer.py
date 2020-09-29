@@ -3,33 +3,9 @@ import csv
 import os, sys, getopt
 import tifffile as tiff
 from PIL import Image
-Image.MAX_IMAGE_PIXELS = 1000000000 # prevent decompressionbomb warning for typical images
+Image.MAX_IMAGE_PIXELS = 10000000000 # prevent decompressionbomb warning for typical images
 import tkinter as tk
 from tkinter import filedialog
-
-home_dir = os.path.dirname(os.path.realpath(__file__))
-ts_path = os.path.dirname( home_dir ) + os.sep + 'tiff_scaling' + os.sep
-ts_file = 'set_tiff_scaling'
-if ( os.path.isdir( ts_path ) and os.path.isfile( ts_path + ts_file + '.py' ) or os.path.isfile( home_dir + ts_file + '.py' ) ):
-    if ( os.path.isdir( ts_path ) ): sys.path.insert( 1, ts_path )
-    import set_tiff_scaling as ts
-    import extract_tiff_scaling as es
-else:
-    programInfo()
-    print( 'missing ' + ts_path + ts_file + '.py!' )
-    print( 'download from https://github.com/kleinerELM/tiff_scaling' )
-    sys.exit()
-
-rsb_file = 'remove_scalebar'
-rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_scalebar' + os.sep
-if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
-    if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
-    import remove_scalebar as rsb
-else:
-    programInfo()
-    print( 'missing ' + rsb_path + rsb_file + '.py!' )
-    print( 'download from https://github.com/kleinerELM/remove_scalebar' )
-    sys.exit()
 
 def programInfo():
     print("#########################################################")
@@ -43,6 +19,33 @@ def programInfo():
     print("#########################################################")
     print()
 
+# import other libaries by kleinerELM
+home_dir = os.path.dirname(os.path.realpath(__file__))
+
+ts_path = os.path.dirname( home_dir ) + os.sep + 'tiff_scaling' + os.sep
+ts_file = 'set_tiff_scaling'
+if ( os.path.isdir( ts_path ) and os.path.isfile( ts_path + ts_file + '.py' ) or os.path.isfile( home_dir + ts_file + '.py' ) ):
+    if ( os.path.isdir( ts_path ) ): sys.path.insert( 1, ts_path )
+    import set_tiff_scaling as ts
+    import extract_tiff_scaling as es
+else:
+    programInfo()
+    print( 'missing ' + ts_path + ts_file + '.py!' )
+    print( 'download from https://github.com/kleinerELM/tiff_scaling' )
+    sys.exit()
+
+rsb_file = 'remove_scalebar'
+rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_SEM_scalebar' + os.sep
+if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
+    if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
+    import remove_scalebar as rsb
+else:
+    programInfo()
+    print( 'missing ' + rsb_path + rsb_file + '.py!' )
+    print( 'download from https://github.com/kleinerELM/remove_scalebar' )
+    sys.exit()
+
+# Initial function to load the settings
 def getBaseSettings():
     settings = {
         "showDebuggingOutput" : False,
@@ -51,7 +54,8 @@ def getBaseSettings():
         "outputDirectory"     : "cut",
         "createFolderPerImage": False,
         "col_count"           : 2,
-        "row_count"           : 2
+        "row_count"           : 2,
+        "overwrite_existing"  : False
     }
     return settings
 
@@ -61,9 +65,9 @@ def processArguments():
     col_changed = False
     row_changed = False
     argv = sys.argv[1:]
-    usage = sys.argv[0] + " [-h] [-x] [-y] [-d]"
+    usage = sys.argv[0] + " [-h] [-x] [-y] [-r][-o] [-c] [-d]"
     try:
-        opts, args = getopt.getopt(argv,"hcx:y:d",[])
+        opts, args = getopt.getopt(argv,"hcx:y:od",[])
     except getopt.GetoptError:
         print( usage )
     for opt, arg in opts:
@@ -73,13 +77,17 @@ def processArguments():
             print( '-x,                  : amount of slices in x direction [{}]'.format(settings["col_count"]) )
             print( '-y,                  : amount of slices in y direction [{}]'.format(settings["row_count"]) )
             print( '-o,                  : setting output directory name [{}]'.format(settings["outputDirectory"]) )
-            print( '-c                   : creating subfolders for each image [./' + settings["outputDirectory"] + '/FILENAME/]'.format(settings["outputDirectory"]) )
+            print( '-r,                  : remove existing slices in target directory [OFF]' )
+            print( '-c                   : creating subfolders for each image [./{}/FILENAME/]'.format(settings["outputDirectory"]) )
             print( '-d                   : show debug output' )
             print( '' )
             sys.exit()
         elif opt in ("-o"):
             settings["outputDirectory"] = arg
-            print( 'changed output directory to ' + settings["outputDirectory"] )
+            print( 'changed output directory to {}'.format(settings["outputDirectory"]) )
+        elif opt in ("-r"):
+            settings["overwrite_existing"] = True
+            print( 'will overwrite existing slices' )
         elif opt in ("-c"):
             settings["createFolderPerImage"] = True
             print( 'creating subfolders for images' )
@@ -104,15 +112,27 @@ def processArguments():
     print( '' )
     return settings
 
+def getTargetFolder(settings, file_name):
+    targetDirectory = settings["workingDirectory"] + os.sep + settings["outputDirectory"] + os.sep
+    if settings["createFolderPerImage"]:
+        targetDirectory += file_name + os.sep
+    ## create output directory if it does not exist
+    if not os.path.exists( targetDirectory ):
+        os.makedirs( targetDirectory )
+    return targetDirectory
+
 # slice the source image to smaller tiles, saves it in the defined output folder and returns the scaling if available
-def sliceImage( settings, file_name, file_extension=False ):
+def sliceImage( settings, file_name, file_extension=False, verbose=False ):
+    # process file name
     if not file_extension == False:
         filename = file_name + file_extension
     else:
         filename = file_name
         file_name, file_extension = os.path.splitext( filename )
+    if verbose: print( "  read scaling" )
 
-    scaling = es.getFEIScaling( filename, settings["workingDirectory"], verbose=settings["showDebuggingOutput"] )
+    # get scaling
+    scaling = es.getFEIScaling( filename, settings["workingDirectory"], verbose=verbose )
     if not scaling == False:
         noScaleBarDirectory = settings["workingDirectory"] + os.sep + 'no_scale_bar' + os.sep
         rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
@@ -121,26 +141,43 @@ def sliceImage( settings, file_name, file_extension=False ):
         scaling = es.autodetectScaling( filename, settings["workingDirectory"] )
         src_file = settings["workingDirectory"] + os.sep + filename
 
+    # open image and get width/height
+    if verbose: print( "  slicing file" )
     img = Image.open( src_file )
     width, height = img.size
-    #cropping
+    
+    #cropping width / height
     crop_height = int(height/settings["row_count"])
     crop_width = int(width/settings["col_count"])
-    targetDirectory = settings["workingDirectory"] + os.sep + settings["outputDirectory"] + os.sep
-    for i in range(settings["row_count"]): # start at i = 0 to row_count-1
-        for j in range(settings["col_count"]): # start at j = 0 to col_count-1
-            if ( settings["createFolderPerImage"] ):
-                targetDirectory = settings["workingDirectory"] + os.sep + settings["outputDirectory"] + os.sep + file_name + os.sep
-                ## create output directory if it does not exist
-                if not os.path.exists( targetDirectory ):
-                    os.makedirs( targetDirectory )
 
-            fileij = file_name + "_" + str( i ) + "_" + str( j ) + file_extension
-            print( "   - " + fileij + ":" )
-            cropped_filename = targetDirectory + fileij
-            img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = ts.setImageJScaling( scaling ) )
+    slice_name=file_name + "_{}_{}"+ file_extension
+    targetDirectory = getTargetFolder(settings, file_name)
+    sclices_already_exists = True
+    if not settings["overwrite_existing"]:
+        for i in range(settings["row_count"]): # start at i = 0 to row_count-1
+            for j in range(settings["col_count"]): # start at j = 0 to col_count-1
+                fileij = slice_name.format(i, j)
+                if not os.path.isfile( targetDirectory + fileij ):
+                    sclices_already_exists = False
+    else:
+        sclices_already_exists = False
+
+    if sclices_already_exists:
+        print("  The expected sliced images already exists! Doing nothing...")
+    else:
+        for file_old in os.listdir(targetDirectory):
+            if ( file_old.endswith( file_extension ) ):
+                #if verbose: print("remove {}".formaT(targetDirectory + file_old))
+                os.remove(targetDirectory + file_old)
+
+        for i in range(settings["row_count"]): # start at i = 0 to row_count-1
+            for j in range(settings["col_count"]): # start at j = 0 to col_count-1
+                fileij = slice_name.format(i,j)
+                if verbose: print( "   - " + fileij + ":" )
+                cropped_filename = targetDirectory + fileij
+                img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = ts.setImageJScaling( scaling ) )
+    
     img=None
-    cropped=None
     return scaling
 
 ### actual program start
@@ -177,6 +214,6 @@ if __name__ == '__main__':
                 # filename = os.fsdecode(file)
                 position = position + 1
                 print( " Analysing {} ({}/{}) :".format(file_name + file_extension, position, count) )
-                sliceImage( settings, file_name, file_extension )
+                sliceImage( settings, file_name, file_extension, verbose=settings["showDebuggingOutput"] )
 
     print( "Script DONE!" )
