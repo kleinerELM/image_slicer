@@ -33,7 +33,7 @@ Help output of the python script:
 # Automatically slice TIFF images using a defined grid  #
 # in a selected folder.                                 #
 #                                                       #
-# © 2020 Florian Kleiner, Max Patzelt                   #
+# © 2021 Florian Kleiner, Max Patzelt                   #
 #   Bauhaus-Universität Weimar                          #
 #   Finger-Institut für Baustoffkunde                   #
 #                                                       #

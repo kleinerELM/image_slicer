@@ -12,7 +12,7 @@ def programInfo():
     print("# Automatically slice TIFF images using a defined grid  #")
     print("# in a selected folder.                                 #")
     print("#                                                       #")
-    print("# © 2020 Florian Kleiner, Max Patzelt                   #")
+    print("# © 2021 Florian Kleiner, Max Patzelt                   #")
     print("#   Bauhaus-Universität Weimar                          #")
     print("#   Finger-Institut für Baustoffkunde                   #")
     print("#                                                       #")
@@ -34,15 +34,15 @@ else:
     print( 'download from https://github.com/kleinerELM/tiff_scaling' )
     sys.exit()
 
-rsb_file = 'remove_scalebar'
+rsb_file = 'remove_SEM_scalebar'
 rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_SEM_scalebar' + os.sep
 if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
     if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
-    import remove_scalebar as rsb
+    import remove_SEM_scalebar as rsb
 else:
     programInfo()
     print( 'missing ' + rsb_path + rsb_file + '.py!' )
-    print( 'download from https://github.com/kleinerELM/remove_scalebar' )
+    print( 'download from https://github.com/kleinerELM/remove_SEM_scalebar' )
     sys.exit()
 
 # Initial function to load the settings
