@@ -23,10 +23,9 @@ def programInfo():
 home_dir = os.path.dirname(os.path.realpath(__file__))
 
 ts_path = os.path.dirname( home_dir ) + os.sep + 'tiff_scaling' + os.sep
-ts_file = 'set_tiff_scaling'
+ts_file = 'extract_tiff_scaling'
 if ( os.path.isdir( ts_path ) and os.path.isfile( ts_path + ts_file + '.py' ) or os.path.isfile( home_dir + ts_file + '.py' ) ):
     if ( os.path.isdir( ts_path ) ): sys.path.insert( 1, ts_path )
-    import set_tiff_scaling as ts
     import extract_tiff_scaling as es
 else:
     programInfo()
@@ -102,7 +101,7 @@ def processArguments():
         elif opt in ("-d"):
             print( 'show debugging output' )
             settings["showDebuggingOutput"] = True
-    # alway expecting the same values for row/col if not defined explicitly        
+    # alway expecting the same values for row/col if not defined explicitly
     if col_changed and not row_changed:
         settings["row_count"] = settings["col_count"]
         print( 'changed amount of slices in y direction also to ' + str( settings["row_count"] ) )
@@ -145,7 +144,7 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
     if verbose: print( "  slicing file" )
     img = Image.open( src_file )
     width, height = img.size
-    
+
     #cropping width / height
     crop_height = int(height/settings["row_count"])
     crop_width = int(width/settings["col_count"])
@@ -175,8 +174,9 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
                 fileij = slice_name.format(i,j)
                 if verbose: print( "   - " + fileij + ":" )
                 cropped_filename = targetDirectory + fileij
-                img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = ts.setImageJScaling( scaling ) )
-    
+
+                img.crop( ((j*crop_width), (i*crop_height), ((j+1)*crop_width), ((i+1)*crop_height)) ).save( cropped_filename, tiffinfo = es.setImageJScaling( scaling ) )
+
     img=None
     return scaling
 
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     root.withdraw()
 
     settings = processArguments()
-    if ( settings["showDebuggingOutput"] ) : print( "I am living in '{}'".format(settings["home_dir"] ) ) 
+    if ( settings["showDebuggingOutput"] ) : print( "I am living in '{}'".format(settings["home_dir"] ) )
     settings["workingDirectory"] = filedialog.askdirectory(title='Please select the working directory')
     if ( settings["showDebuggingOutput"] ) : print( "Selected working directory: " + settings["workingDirectory"] )
 
