@@ -12,7 +12,7 @@ def programInfo():
     print("# Automatically slice TIFF images using a defined grid  #")
     print("# in a selected folder.                                 #")
     print("#                                                       #")
-    print("# © 2021 Florian Kleiner, Max Patzelt                   #")
+    print("# © 2022 Florian Kleiner, Max Patzelt                   #")
     print("#   Bauhaus-Universität Weimar                          #")
     print("#   Finger-Institut für Baustoffkunde                   #")
     print("#                                                       #")
@@ -132,12 +132,13 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
 
     # get scaling
     scaling = es.getFEIScaling( filename, settings["workingDirectory"], verbose=verbose )
-    if not scaling == False:
+    print(scaling)
+    if not scaling == False and scaling['editor'] != None:
         noScaleBarDirectory = settings["workingDirectory"] + os.sep + 'no_scale_bar' + os.sep
         rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
         src_file = noScaleBarDirectory + filename
     else:
-        scaling = es.autodetectScaling( filename, settings["workingDirectory"] )
+        scaling = es.autodetectScaling( filename, settings["workingDirectory"], verbose=True )
         src_file = settings["workingDirectory"] + os.sep + filename
 
     # open image and get width/height
@@ -149,13 +150,13 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
     crop_height = int(height/settings["row_count"])
     crop_width = int(width/settings["col_count"])
 
-    slice_name=file_name + "_{}_{}"+ file_extension
+    slice_name = "{}_{:03d}_{:03d}.tif"
     targetDirectory = getTargetFolder(settings, file_name)
     sclices_already_exists = True
     if not settings["overwrite_existing"]:
         for i in range(settings["row_count"]): # start at i = 0 to row_count-1
             for j in range(settings["col_count"]): # start at j = 0 to col_count-1
-                fileij = slice_name.format(i, j)
+                fileij = slice_name.format(file_name, i, j)
                 if not os.path.isfile( targetDirectory + fileij ):
                     sclices_already_exists = False
     else:
@@ -171,7 +172,7 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
 
         for i in range(settings["row_count"]): # start at i = 0 to row_count-1
             for j in range(settings["col_count"]): # start at j = 0 to col_count-1
-                fileij = slice_name.format(i,j)
+                fileij = slice_name.format(file_name, i,j)
                 if verbose: print( "   - " + fileij + ":" )
                 cropped_filename = targetDirectory + fileij
 
