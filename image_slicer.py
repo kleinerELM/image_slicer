@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-import csv
 import os, sys, getopt
-import tifffile as tiff
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = 10000000000 # prevent decompressionbomb warning for typical images
 import tkinter as tk
@@ -12,7 +10,7 @@ def programInfo():
     print("# Automatically slice TIFF images using a defined grid  #")
     print("# in a selected folder.                                 #")
     print("#                                                       #")
-    print("# © 2022 Florian Kleiner, Max Patzelt                   #")
+    print("# © 2023 Florian Kleiner, Max Patzelt                   #")
     print("#   Bauhaus-Universität Weimar                          #")
     print("#   Finger-Institut für Baustoffkunde                   #")
     print("#                                                       #")
@@ -33,16 +31,16 @@ else:
     print( 'download from https://github.com/kleinerELM/tiff_scaling' )
     sys.exit()
 
-rsb_file = 'remove_SEM_scalebar'
-rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_SEM_scalebar' + os.sep
-if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
-    if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
-    import remove_SEM_scalebar as rsb
-else:
-    programInfo()
-    print( 'missing ' + rsb_path + rsb_file + '.py!' )
-    print( 'download from https://github.com/kleinerELM/remove_SEM_scalebar' )
-    sys.exit()
+#rsb_file = 'remove_SEM_scalebar'
+#rsb_path = os.path.dirname( home_dir ) + os.sep + 'remove_SEM_scalebar' + os.sep
+#if ( os.path.isdir( rsb_path ) and os.path.isfile( rsb_path +rsb_file + '.py' ) or os.path.isfile( home_dir + rsb_file + '.py' ) ):
+#    if ( os.path.isdir( rsb_path ) ): sys.path.insert( 1, rsb_path )
+#    import remove_SEM_scalebar as rsb
+#else:
+#    programInfo()
+#    print( 'missing ' + rsb_path + rsb_file + '.py!' )
+#    print( 'download from https://github.com/kleinerELM/remove_SEM_scalebar' )
+#    sys.exit()
 
 # Initial function to load the settings
 def getBaseSettings():
@@ -66,7 +64,7 @@ def processArguments():
     argv = sys.argv[1:]
     usage = sys.argv[0] + " [-h] [-x] [-y] [-r][-o] [-c] [-d]"
     try:
-        opts, args = getopt.getopt(argv,"hcx:y:od",[])
+        opts, args = getopt.getopt(argv,"hcx:y:odr",[])
     except getopt.GetoptError:
         print( usage )
     for opt, arg in opts:
@@ -135,7 +133,10 @@ def sliceImage( settings, file_name, file_extension=False, verbose=False ):
     print(scaling)
     if not scaling == False and scaling['editor'] != None:
         noScaleBarDirectory = settings["workingDirectory"] + os.sep + 'no_scale_bar' + os.sep
-        rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
+        metafree_img, scaling = es.get_image_without_scalebar(settings["workingDirectory"], filename )
+        metafree_img.convert('L').save( noScaleBarDirectory + filename , "TIFF", tiffinfo = es.setImageJScaling( scaling ))
+        metafree_img.close()
+        #rsb.removeScaleBarPIL( settings["workingDirectory"], filename, noScaleBarDirectory, scaling=scaling )
         src_file = noScaleBarDirectory + filename
     else:
         scaling = es.autodetectScaling( filename, settings["workingDirectory"], verbose=True )
